@@ -497,12 +497,17 @@ export async function processArrayBuffer(buffer: ArrayBuffer): Promise<LogEntry[
             for (const event of reader.decodeAll()) {
                 let parsedLine: LogEntry;
                 try {
-                    parsedLine = JSON.parse(event.message) as LogEntry;
+                    parsedLine = JSON.parse(event.message);
                 } catch {
-                    console.warn(`Failed to parse CLP log event ${event.logEventIdx.toString()} as JSON`);
+                    console.warn(`Failed to parse CLP log event ${event.logEventIdx} as JSON`);
                     continue;
                 }
                 entries.push(parsedLine);
+            }
+
+            if (entries.length === 0) {
+                console.error("No valid JSON entries found in CLP archive");
+                throw new Error("No valid JSON entries found in CLP archive");
             }
 
             return entries;
