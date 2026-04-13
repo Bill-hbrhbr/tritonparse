@@ -493,17 +493,17 @@ export async function processArrayBuffer(buffer: ArrayBuffer): Promise<LogEntry[
         let reader: ClpArchiveReader | null = null;
         try {
             reader = await ClpArchiveReader.create(new Uint8Array(buffer));
-            const entries: LogEntry[] = [];
 
             for (const event of reader.decodeAll()) {
-                let parsedLine: LogEntry;
                 try {
-                    parsedLine = JSON.parse(event.message);
+                    const parsedLine: LogEntry = JSON.parse(event.message);
+                    if (parsedLine && typeof parsedLine === 'object') {
+                        entries.push(parsedLine);
+                    }
                 } catch {
-                    console.warn(`Failed to parse CLP log event ${event.logEventIdx} as JSON`);
+                    console.warn(`Failed to parse line as JSON: ${event.message.substring(0, 100)}...`);
                     continue;
                 }
-                entries.push(parsedLine);
             }
         } catch (error) {
             console.error('Error decompressing or parsing clp stream:', error);
