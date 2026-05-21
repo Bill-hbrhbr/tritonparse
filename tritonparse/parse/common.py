@@ -454,20 +454,28 @@ def compress_single_file(
         compressed_path = file_path + ".gz"
     elif compression == "zstd":
         compressed_path = file_path + ".zst"
+    elif compression == "clp":
+        compressed_path = file_path + ".clp"
     else:
         raise ValueError(f"Unsupported compression: {compression}")
 
     if verbose:
         logger.info(f"Compressing {file_path} with {compression}")
 
-    with open(file_path, "rb") as f_in:
-        if compression == "gzip":
-            with gzip.open(compressed_path, "wb") as f_out:
-                shutil.copyfileobj(f_in, f_out)
-        else:
-            cctx = zstd.ZstdCompressor()
-            with open(compressed_path, "wb") as f_out:
-                cctx.copy_stream(f_in, f_out)
+    if compression == "clp":
+        from tritonparse.clp import clp_open
+
+        with clp_open(compressed_path, "w") as archive:
+            archive.add(file_path)
+    else:
+        with open(file_path, "rb") as f_in:
+            if compression == "gzip":
+                with gzip.open(compressed_path, "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            else:
+                cctx = zstd.ZstdCompressor()
+                with open(compressed_path, "wb") as f_out:
+                    cctx.copy_stream(f_in, f_out)
 
     # Delete the original file after successful compression
     if os.path.exists(file_path):
