@@ -126,6 +126,7 @@ def oss_run(
     torch_trace_dir: Optional[str] = None,
     procedure_checks: list = None,
     no_pre_init_attribution: bool = False,
+    keep_staging_temp_dirs: bool = True,
 ):
     """
     Main function for tritonparse. It is for OSS only.
@@ -185,6 +186,11 @@ def oss_run(
     else:
         out_dir = str(Path(parsed_log_dir).absolute())
     print_parsed_files_summary(out_dir)
+
+    if not keep_staging_temp_dirs:
+        shutil.rmtree(logs)
+        shutil.rmtree(parsed_log_dir)
+
     return None
 
 

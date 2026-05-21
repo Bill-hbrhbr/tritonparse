@@ -210,6 +210,7 @@ class TestComplexKernels(GPUTestBase):
             enable_trace_launch=True,
             log_dir=temp_dir_logs,
             out=temp_dir_parsed,
+            keep_staging_temp_dirs=TEST_KEEP_OUTPUT,
         ):
             # Main test function logic
             torch.manual_seed(0)
