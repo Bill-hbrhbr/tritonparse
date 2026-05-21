@@ -12,6 +12,7 @@ from yscope_clp_core import open_archive, ClpArchiveReader
 class ClpTextStream(Iterator[str]):
     def __init__(self, archive: ClpArchiveReader) -> None:
         self.archive = archive
+        return None
 
     def __iter__(self) -> "ClpTextStream":
         return self
