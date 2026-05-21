@@ -1298,8 +1298,6 @@ class TritonTraceHandler(logging.StreamHandler):
                     try:
                         self.flush()
                     finally:
-                        if TRITON_TRACE_COMPRESSION == "clp":
-                            self.stream._compress()
                         self.stream.close()
                         self.stream = None
             finally:
@@ -1994,6 +1992,20 @@ def init_with_env():
     """
     if triton_trace_folder:
         init(triton_trace_folder, enable_trace_launch=TRITON_TRACE_LAUNCH)
+
+
+def compress_clp_trace_stream_for_parse():
+    """
+    Finalize the current CLP trace archive before parsing.
+    """
+    global TRITON_TRACE_HANDLER
+    if (
+        TRITON_TRACE_COMPRESSION != "clp"
+        or TRITON_TRACE_HANDLER is None
+        or TRITON_TRACE_HANDLER.stream is None
+    ):
+        return
+    TRITON_TRACE_HANDLER.stream.close()
 
 
 def clear_logging_config():

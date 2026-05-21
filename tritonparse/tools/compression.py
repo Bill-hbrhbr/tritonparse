@@ -47,7 +47,7 @@ def detect_compression(filepath: Union[str, Path]) -> str:
         filepath: Path to the file to check
 
     Returns:
-        Compression type: "gzip", "zstd", or "none"
+        Compression type: "gzip", "zstd", "clp", or "none"
 
     Raises:
         FileNotFoundError: If file does not exist
@@ -63,6 +63,10 @@ def detect_compression(filepath: Union[str, Path]) -> str:
             return "gzip"
         if magic == ZSTD_MAGIC:
             return "zstd"
+
+    from yscope_clp_core import is_clp_json_single_file_archive
+    if is_clp_json_single_file_archive(filepath):
+        return "clp"
 
     return "none"
 
@@ -138,6 +142,11 @@ def open_compressed_file(filepath: Union[str, Path]) -> Iterator[TextIO]:
             with dctx.stream_reader(binary_file, read_across_frames=True) as reader:
                 with io.TextIOWrapper(reader, encoding="utf-8") as text_stream:
                     yield text_stream
+    elif compression == "clp":
+        from tritonparse.clp import clp_open, ClpTextStream
+
+        with clp_open(filepath, "r") as archive:
+            yield ClpTextStream(archive)
     else:
         # Plain text file
         with open(filepath, "r", encoding="utf-8") as f:
