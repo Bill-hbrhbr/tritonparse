@@ -88,7 +88,8 @@ class TritonParseManager:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        compress_clp_trace_stream_for_parse()
+        if TRITON_TRACE_COMPRESSION == "clp":
+            compress_clp_trace_stream_for_parse()
         self.output_link = unified_parse(
             source=self.dir_path,
             overwrite=True,

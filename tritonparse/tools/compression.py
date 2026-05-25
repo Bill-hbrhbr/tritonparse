@@ -28,10 +28,8 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, TextIO, Tuple, Union
 
 from tritonparse._json_compat import JSONDecodeError, loads
-from tritonparse.clp import clp_open
 
 import zstandard as zstd
-
 
 # Magic numbers for compression format detection
 # gzip: 0x1F 0x8B (RFC 1952)
@@ -68,9 +66,12 @@ def detect_compression(filepath: Union[str, Path]) -> str:
         if magic == ZSTD_MAGIC:
             return "zstd"
 
-    from yscope_clp_core import is_clp_json_single_file_archive
-    if is_clp_json_single_file_archive(filepath):
-        return "clp"
+    try:
+        from yscope_clp_core import is_clp_json_single_file_archive
+        if is_clp_json_single_file_archive(filepath):
+            return "clp"
+    except:
+        pass
 
     return "none"
 
@@ -148,7 +149,6 @@ def open_compressed_file(filepath: Union[str, Path]) -> Iterator[TextIO]:
                     yield text_stream
     elif compression == "clp":
         from tritonparse.clp import clp_open, ClpTextStream
-
         with clp_open(filepath, "r") as archive:
             yield ClpTextStream(archive)
     else:
@@ -211,6 +211,7 @@ def enumerate_json(
         ...     event_type = parsed_json.get("event_type")
     """
     if detect_compression(filepath) == "clp":
+        from tritonparse.clp import clp_open
         with clp_open(filepath, "r") as archive:
             for line_num, event in enumerate(archive, start=start):
                 yield line_num, event.get_kv_pairs()

@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 from typing import Optional
 
-from tritonparse.shared_vars import is_fbcode
+from tritonparse.shared_vars import is_fbcode, TEST_KEEP_OUTPUT
 
 from .common import (
     copy_local_to_tmpdir,
@@ -126,7 +126,6 @@ def oss_run(
     torch_trace_dir: Optional[str] = None,
     procedure_checks: list = None,
     no_pre_init_attribution: bool = False,
-    keep_staging_temp_dirs: bool = True,
 ):
     """
     Main function for tritonparse. It is for OSS only.
@@ -187,7 +186,7 @@ def oss_run(
         out_dir = str(Path(parsed_log_dir).absolute())
     print_parsed_files_summary(out_dir)
 
-    if not keep_staging_temp_dirs:
+    if not TEST_KEEP_OUTPUT:
         shutil.rmtree(logs)
         shutil.rmtree(parsed_log_dir)
 
