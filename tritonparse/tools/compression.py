@@ -25,9 +25,13 @@ import gzip
 import io
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator, TextIO, Union
+from typing import Any, Dict, Iterator, TextIO, Tuple, Union
+
+from tritonparse._json_compat import JSONDecodeError, loads
+from tritonparse.clp import clp_open
 
 import zstandard as zstd
+
 
 # Magic numbers for compression format detection
 # gzip: 0x1F 0x8B (RFC 1952)
@@ -175,3 +179,54 @@ def iter_lines(filepath: Union[str, Path]) -> Iterator[str]:
     with open_compressed_file(filepath) as f:
         for line in f:
             yield line.rstrip("\n\r")
+
+
+def enumerate_json(
+    filepath: Union[str, Path],
+    start: int = 0,
+    strict: bool = False,
+) -> Iterator[Tuple[int, Dict[str, Any]]]:
+    """
+    Iterate over JSON lines in a file as parsed JSON objects.
+
+    Empty lines are skipped. Lines that cannot be parsed are skipped unless
+    `strict` is `True`.
+
+    Args:
+        filepath: Path to the file
+        start: Starting line number for enumeration
+        strict: Whether to raise an exception when a line cannot be parsed
+
+    Yields:
+        Line numbers and parsed JSON objects from the file
+
+    Raises:
+        ClpCoreRuntimeError: If CLP archive does not exist or fails to read
+        FileNotFoundError: If file does not exist
+        JSONDecodeError: If a line cannot be parsed and `strict` is `True`.
+
+    Example:
+        >>> for line_num, parsed_json in enumerate_json("trace.bin.ndjson", start=1):
+        ...     logger.debug(f"Processing line {line_num} in {filepath}")
+        ...     event_type = parsed_json.get("event_type")
+    """
+    if detect_compression(filepath) == "clp":
+        with clp_open(filepath, "r") as archive:
+            for line_num, event in enumerate(archive, start=start):
+                yield line_num, event.get_kv_pairs()
+    else:
+        with open_compressed_file(filepath) as f:
+            for line_num, line in enumerate(f, start=start):
+                json_str = line.strip()
+                if not json_str:
+                    continue
+
+                try:
+                    parsed_json = loads(json_str)
+                except JSONDecodeError:
+                    if strict:
+                        raise
+                    logger.warning(f"Failed to parse JSON on line {line_num} in {filepath}")
+                    continue
+
+                yield line_num, parsed_json

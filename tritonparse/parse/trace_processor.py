@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from tritonparse._json_compat import dumps, JSONDecodeError, loads
-from tritonparse.tools.compression import detect_compression, open_compressed_file
+from tritonparse.tools.compression import enumerate_json
 from tritonparse.tp_logger import get_logger
 
 from .event_diff import _generate_autotune_analysis_events, _generate_launch_diff
@@ -355,25 +355,6 @@ def process_ir(
     return mapping
 
 
-def _iter_trace_events(file_path: str):
-    if detect_compression(file_path) == "clp":
-        from tritonparse.clp import clp_open
-
-        with clp_open(file_path, "r") as archive:
-            for line_num, event in enumerate(archive, 1):
-                yield line_num + 1, event.get_kv_pairs()
-    else:
-        with open_compressed_file(file_path) as f:
-            for line_num, line in enumerate(f, 1):
-                json_str = line.strip()
-                if not json_str:
-                    continue
-                try:
-                    yield line_num + 1, loads(json_str)
-                except JSONDecodeError:
-                    logger.warning(f"Failed to parse JSON on line {line_num} in {file_path}")
-
-
 def _prescan_for_fake_compilations(
     file_path: str,
 ) -> Tuple[Set[str], Dict[str, Dict[str, Any]]]:
@@ -395,19 +376,19 @@ def _prescan_for_fake_compilations(
     compilation_hashes: Set[str] = set()
     first_launch_by_hash: Dict[str, Dict[str, Any]] = {}
 
-    for _, parsed in _iter_trace_events(file_path):
-        event_type = parsed.get("event_type")
+    for _, parsed_json in enumerate_json(file_path):
+        event_type = parsed_json.get("event_type")
 
         if event_type == "compilation":
-            kernel_hash = parsed.get("payload", {}).get("metadata", {}).get("hash")
+            kernel_hash = parsed_json.get("payload", {}).get("metadata", {}).get("hash")
             if kernel_hash:
                 compilation_hashes.add(kernel_hash)
 
         elif event_type == "launch":
-            kernel_hash = parsed.get("compilation_metadata", {}).get("hash")
+            kernel_hash = parsed_json.get("compilation_metadata", {}).get("hash")
             if kernel_hash and kernel_hash not in first_launch_by_hash:
                 # Only store the first launch event for each kernel
-                first_launch_by_hash[kernel_hash] = parsed
+                first_launch_by_hash[kernel_hash] = parsed_json
 
     return compilation_hashes, first_launch_by_hash
 
@@ -590,8 +571,8 @@ def parse_single_trace_content(trace_content: str) -> str:
         # Create bidirectional mappings between every pair of populated stages,
         # for example TTIR ↔ TTGIR, TTIR ↔ PTX, TTGIR ↔ PTX, ...
         stage_names = list(stage_maps.keys())
-        for i, src_stage in enumerate(stage_names):
-            for tgt_stage in stage_names[i + 1 :]:
+        for i, src_stage in enumerate(stage_names, start=1):
+            for tgt_stage in stage_names[i :]:
                 if stage_maps[src_stage] and stage_maps[tgt_stage]:
                     create_bidirectional_mapping(
                         stage_maps[src_stage],
@@ -842,7 +823,7 @@ def parse_single_rank(
 
     # Iterate over all input files in order
     for file_path in file_paths:
-        for line_num, parsed_json in _iter_trace_events(file_path):
+        for line_num, parsed_json in enumerate_json(file_path, start=1):
             logger.debug(f"Processing line {line_num} in {file_path}")
 
             event_type = parsed_json.get("event_type", None)
