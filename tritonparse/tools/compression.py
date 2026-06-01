@@ -71,7 +71,7 @@ def detect_compression(filepath: Union[str, Path]) -> str:
 
         if is_clp_json_single_file_archive(filepath):
             return "clp"
-    except Exception:
+    except ImportError:
         pass
 
     return "none"
