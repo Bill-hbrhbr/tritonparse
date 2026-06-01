@@ -3,8 +3,8 @@
 """
 Compression utilities for tritonparse trace files.
 
-Provides transparent handling of compressed trace files,
-supporting gzip (.bin.ndjson, .ndjson.gz, .gz) and zstd (.zst) formats.
+Provides transparent handling of compressed trace files, supporting gzip
+(.bin.ndjson, .ndjson.gz, .gz), zstd (.zst), and CLP (.clp) formats.
 
 This module uses magic number detection for reliability, which works
 regardless of file extension.
@@ -114,7 +114,8 @@ def open_compressed_file(filepath: Union[str, Path]) -> Iterator[TextIO]:
     """
     Open a file with automatic compression detection and handling.
 
-    This context manager transparently handles gzip, zstd, and plain text files.
+    This context manager transparently handles gzip, zstd, CLP, and plain text
+    files.
     Compression format is detected using magic numbers, not file extensions.
 
     Args:

@@ -445,7 +445,7 @@ def compress_single_file(
     Compress a single file and delete the original file.
     Args:
         file_path: Path to the file to compress
-        compression: Compression algorithm to use ("gzip" or "zstd")
+        compression: Compression algorithm to use ("gzip", "zstd", or "clp")
         verbose: Whether to print verbose information
     Returns:
         Path to the compressed file
