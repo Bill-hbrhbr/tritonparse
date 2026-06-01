@@ -464,6 +464,7 @@ def compress_single_file(
 
     if compression == "clp":
         from tritonparse.clp import clp_open
+
         with clp_open(compressed_path, "w") as archive:
             archive.add(file_path)
     else:

@@ -150,6 +150,7 @@ def open_compressed_file(filepath: Union[str, Path]) -> Iterator[TextIO]:
                     yield text_stream
     elif compression == "clp":
         from tritonparse.clp import clp_open, ClpTextStream
+
         with clp_open(filepath, "r") as archive:
             yield ClpTextStream(archive)
     else:
@@ -214,6 +215,7 @@ def enumerate_json(
     """
     if detect_compression(filepath) == "clp":
         from tritonparse.clp import clp_open
+
         with clp_open(filepath, "r") as archive:
             for line_num, event in enumerate(archive, start=start):
                 yield line_num, event.get_kv_pairs()
