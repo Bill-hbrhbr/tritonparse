@@ -109,6 +109,22 @@ def is_zstd_file(filepath: Union[str, Path]) -> bool:
         return False
 
 
+def is_clp_file(filepath: Union[str, Path]) -> bool:
+    """
+    Check if a file is CLP compressed.
+
+    Args:
+        filepath: Path to the file to check
+
+    Returns:
+        True if file is CLP compressed, False otherwise
+    """
+    try:
+        return detect_compression(filepath) == "clp"
+    except FileNotFoundError:
+        return False
+
+
 @contextmanager
 def open_compressed_file(filepath: Union[str, Path]) -> Iterator[TextIO]:
     """

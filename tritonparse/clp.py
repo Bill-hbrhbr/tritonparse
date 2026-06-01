@@ -21,6 +21,9 @@ class ClpTextStream(Iterator[str]):
         event = next(self.archive)
         return json.dumps(event.get_kv_pairs(), separators=(",", ":")) + "\n"
 
+    def readlines(self) -> list[str]:
+        return list(self)
+
 
 def clp_open(clp_dir: str, open_mode: str):
     assert open_mode in ["r", "w"], "CLP only supports r and w modes."
