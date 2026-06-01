@@ -187,8 +187,9 @@ def oss_run(
     print_parsed_files_summary(out_dir)
 
     if not TEST_KEEP_OUTPUT:
-        shutil.rmtree(logs)
-        shutil.rmtree(parsed_log_dir)
+        shutil.rmtree(logs, ignore_errors=True)
+        if out is not None:
+            shutil.rmtree(parsed_log_dir, ignore_errors=True)
 
     return None
 
