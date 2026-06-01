@@ -378,6 +378,9 @@ def _prescan_for_fake_compilations(
     first_launch_by_hash: Dict[str, Dict[str, Any]] = {}
 
     for _, parsed_json in enumerate_json(file_path):
+        if parsed_json is None:
+            continue
+
         event_type = parsed_json.get("event_type")
 
         if event_type == "compilation":
@@ -825,6 +828,10 @@ def parse_single_rank(
     # Iterate over all input files in order
     for file_path in file_paths:
         for line_num, parsed_json in enumerate_json(file_path, start=1):
+            if parsed_json is None:
+                logger.warning(f"Failed to parse JSON on line {line_num} in {file_path}")
+                continue
+
             logger.debug(f"Processing line {line_num} in {file_path}")
 
             event_type = parsed_json.get("event_type", None)

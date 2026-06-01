@@ -25,7 +25,7 @@ import gzip
 import io
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, Iterator, TextIO, Tuple, Union
+from typing import Any, Dict, Iterator, Optional, TextIO, Tuple, Union
 
 from tritonparse._json_compat import JSONDecodeError, loads
 
@@ -184,30 +184,31 @@ def iter_lines(filepath: Union[str, Path]) -> Iterator[str]:
 def enumerate_json(
     filepath: Union[str, Path],
     start: int = 0,
-    strict: bool = False,
-) -> Iterator[Tuple[int, Dict[str, Any]]]:
+) -> Iterator[Tuple[int, Optional[Dict[str, Any]]]]:
     """
     Iterate over JSON lines in a file as parsed JSON objects.
 
-    Empty lines are skipped. Lines that cannot be parsed are skipped unless
-    `strict` is `True`.
+    Lines that cannot be parsed yield None for the parsed object so callers can
+    decide whether to log, skip, or fail.
 
     Args:
         filepath: Path to the file
         start: Starting line number for enumeration
-        strict: Whether to raise an exception when a line cannot be parsed
 
     Yields:
-        Line numbers and parsed JSON objects from the file
+        Tuples of line number and parsed JSON object. The parsed object is None
+        when a non-empty line cannot be decoded as JSON.
 
     Raises:
         ClpCoreRuntimeError: If CLP archive does not exist or fails to read
         FileNotFoundError: If file does not exist
-        JSONDecodeError: If a line cannot be parsed and `strict` is `True`.
 
     Example:
-        >>> for line_num, parsed_json in enumerate_json("trace.bin.ndjson", start=1):
-        ...     logger.debug(f"Processing line {line_num} in {filepath}")
+        >>> for line_num, parsed_json in enumerate_json(file_path, start=1):
+        ...     if parsed_json is None:
+        ...         logger.warning(f"Failed to parse JSON on line {line_num} in {file_path}")
+        ...         continue
+        ...     logger.debug(f"Processing line {line_num} in {file_path}")
         ...     event_type = parsed_json.get("event_type")
     """
     if detect_compression(filepath) == "clp":
@@ -223,11 +224,6 @@ def enumerate_json(
                     continue
 
                 try:
-                    parsed_json = loads(json_str)
+                    yield line_num, loads(json_str)
                 except JSONDecodeError:
-                    if strict:
-                        raise
-                    logger.warning(f"Failed to parse JSON on line {line_num} in {filepath}")
-                    continue
-
-                yield line_num, parsed_json
+                    yield line_num, None
