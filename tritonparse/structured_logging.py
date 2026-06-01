@@ -2019,8 +2019,7 @@ def clean_up_log_handler():
     if TRITON_TRACE_HANDLER is not None:
         if TRITON_TRACE_HANDLER in triton_trace_log.handlers:
             triton_trace_log.removeHandler(TRITON_TRACE_HANDLER)
-        TRITON_TRACE_HANDLER.flush()
-        TRITON_TRACE_HANDLER.close()
+        TRITON_TRACE_HANDLER._ensure_stream_closed()
         TRITON_TRACE_HANDLER = None
 
 
