@@ -68,9 +68,10 @@ def detect_compression(filepath: Union[str, Path]) -> str:
 
     try:
         from yscope_clp_core import is_clp_json_single_file_archive
+
         if is_clp_json_single_file_archive(filepath):
             return "clp"
-    except:
+    except Exception:
         pass
 
     return "none"
